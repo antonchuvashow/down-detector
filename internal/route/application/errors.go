@@ -1,12 +1,12 @@
-package application
+package routeapplication
 
 import (
-	"detector/internal/route/domain"
+	routedomain "detector/internal/route/domain"
 	"fmt"
 )
 
 type ErrRouteNotFound struct {
-	ID domain.RouteID
+	ID routedomain.RouteID
 }
 
 func (e ErrRouteNotFound) Error() string {
@@ -14,7 +14,7 @@ func (e ErrRouteNotFound) Error() string {
 }
 
 type ErrRouteAlreadyExists struct {
-	ID domain.RouteID
+	ID routedomain.RouteID
 }
 
 func (e ErrRouteAlreadyExists) Error() string {

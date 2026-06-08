@@ -1,11 +1,11 @@
-package application
+package routeapplication
 
-import "detector/internal/route/domain"
+import routedomain "detector/internal/route/domain"
 
 type RouteRepository interface {
-	GetAllRoutes() ([]domain.Route, error)
-	Get(id domain.RouteID) (domain.Route, error)
-	Add(route domain.Route) error
-	Update(route domain.Route) error
-	Delete(id domain.RouteID) error
+	GetAllRoutes() ([]routedomain.Route, error)
+	Get(id routedomain.RouteID) (routedomain.Route, error)
+	Add(route routedomain.Route) error
+	Update(route routedomain.Route) error
+	Delete(id routedomain.RouteID) error
 }
