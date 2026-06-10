@@ -36,12 +36,12 @@ func (r *FactoryRegistry) Get(key FactoryKey) (InspectorFactory, error) {
 	return factory, nil
 }
 
-func (r *FactoryRegistry) Find(inspector Inspector) (InspectorFactory, error) {
+func (r *FactoryRegistry) Find(inspector Inspector) (FactoryKey, error) {
 	inspectorType := reflect.TypeOf(inspector)
 	key, ok := r.typeToKey[inspectorType]
 	if !ok {
-		return nil, fmt.Errorf("could not determine factory key for type: %T", inspector)
+		return "", fmt.Errorf("could not determine factory key for type: %T", inspector)
 	}
 
-	return r.Get(key)
+	return key, nil
 }
