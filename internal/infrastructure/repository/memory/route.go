@@ -1,55 +1,55 @@
 package repository
 
 import (
-	"detector/internal/route/application"
-	"detector/internal/route/domain"
+	routeapplication "detector/internal/route/application"
+	routedomain "detector/internal/route/domain"
 )
 
 type MemoryRouteRepository struct {
-	routes map[domain.RouteID]domain.Route
+	routes map[routedomain.RouteID]routedomain.Route
 }
 
 func NewMemoryRouteRepository() *MemoryRouteRepository {
 	return &MemoryRouteRepository{
-		routes: make(map[domain.RouteID]domain.Route),
+		routes: make(map[routedomain.RouteID]routedomain.Route),
 	}
 }
 
-func (r *MemoryRouteRepository) GetAllRoutes() ([]domain.Route, error) {
-	result := make([]domain.Route, 0, len(r.routes))
+func (r *MemoryRouteRepository) GetAllRoutes() ([]routedomain.Route, error) {
+	result := make([]routedomain.Route, 0, len(r.routes))
 	for _, route := range r.routes {
 		result = append(result, route)
 	}
 	return result, nil
 }
 
-func (r *MemoryRouteRepository) Get(id domain.RouteID) (domain.Route, error) {
+func (r *MemoryRouteRepository) Get(id routedomain.RouteID) (routedomain.Route, error) {
 	route, exists := r.routes[id]
 	if !exists {
-		return domain.Route{}, application.ErrRouteNotFound{ID: id}
+		return routedomain.Route{}, routeapplication.ErrRouteNotFound{ID: id}
 	}
 	return route, nil
 }
 
-func (r *MemoryRouteRepository) Add(route domain.Route) error {
+func (r *MemoryRouteRepository) Add(route routedomain.Route) error {
 	if _, exists := r.routes[route.ID]; exists {
-		return application.ErrRouteAlreadyExists{ID: route.ID}
+		return routeapplication.ErrRouteAlreadyExists{ID: route.ID}
 	}
 	r.routes[route.ID] = route
 	return nil
 }
 
-func (r *MemoryRouteRepository) Update(route domain.Route) error {
+func (r *MemoryRouteRepository) Update(route routedomain.Route) error {
 	if _, exists := r.routes[route.ID]; !exists {
-		return application.ErrRouteNotFound{ID: route.ID}
+		return routeapplication.ErrRouteNotFound{ID: route.ID}
 	}
 	r.routes[route.ID] = route
 	return nil
 }
 
-func (r *MemoryRouteRepository) Delete(id domain.RouteID) error {
+func (r *MemoryRouteRepository) Delete(id routedomain.RouteID) error {
 	if _, exists := r.routes[id]; !exists {
-		return application.ErrRouteNotFound{ID: id}
+		return routeapplication.ErrRouteNotFound{ID: id}
 	}
 	delete(r.routes, id)
 	return nil

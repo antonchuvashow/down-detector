@@ -26,17 +26,17 @@ func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, key inspect
 
 	factory, err := b.factoryRegistry.Get(key)
 	if err != nil {
-		return fmt.Errorf("failed to get inspector factory: %w", err)
+		return fmt.Errorf("route inspector bridge: failed to get inspector factory: %w", err)
 	}
 
-	inspector, err := factory.Create(b.factoryRegistry, config)
+	object, err := factory.Create(b.factoryRegistry, config)
 	if err != nil {
-		return fmt.Errorf("failed to create inspector: %w", err)
+		return fmt.Errorf("route inspector bridge: failed to create inspector: %w", err)
 	}
 
-	serializedConfig, err := factory.Marshal(b.factoryRegistry, inspector)
+	serializedConfig, err := factory.Marshal(b.factoryRegistry, object)
 	if err != nil {
-		return fmt.Errorf("failed to marshal inspector config: %w", err)
+		return fmt.Errorf("route inspector bridge: failed to marshal inspector config: %w", err)
 	}
 
 	routeMethod := inspectiondto.RouteMethod{
@@ -47,7 +47,7 @@ func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, key inspect
 
 	err = b.repo.SaveRouteMethod(routeMethod)
 	if err != nil {
-		return fmt.Errorf("failed to save route method: %w", err)
+		return fmt.Errorf("route inspector bridge: failed to save route method: %w", err)
 	}
 
 	return nil
@@ -56,18 +56,18 @@ func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, key inspect
 func (b *RouteInspectorBridge) FindInspector(routeID routedomain.RouteID) (inspector.Inspector, error) {
 	routeMethod, err := b.repo.GetRouteMethod(routeID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get route method: %w", err)
+		return nil, fmt.Errorf("route inspector bridge: failed to get route method: %w", err)
 	}
 
 	factory, err := b.factoryRegistry.Get(routeMethod.FactoryKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get inspector factory: %w", err)
+		return nil, fmt.Errorf("route inspector bridge: failed to get inspector factory: %w", err)
 	}
 
-	inspector, err := factory.Unmarshal(b.factoryRegistry, routeMethod.SerializedConfig)
+	object, err := factory.Unmarshal(b.factoryRegistry, routeMethod.SerializedConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal inspector config: %w", err)
+		return nil, fmt.Errorf("route inspector bridge: failed to unmarshal inspector config: %w", err)
 	}
 
-	return inspector, nil
+	return object, nil
 }
