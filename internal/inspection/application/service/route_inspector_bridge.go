@@ -29,7 +29,7 @@ func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, key inspect
 		return fmt.Errorf("route inspector bridge: failed to get inspector factory: %w", err)
 	}
 
-	object, err := factory.Create(b.factoryRegistry, config)
+	object, err := factory.Create(b.factoryRegistry, config) // May be removed and delegated to controller part
 	if err != nil {
 		return fmt.Errorf("route inspector bridge: failed to create inspector: %w", err)
 	}
