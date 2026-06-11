@@ -1,19 +1,19 @@
 package domain
 
-type ErrorType int
+type ErrorType string
 
 const (
-	ErrorTypeUnknown ErrorType = iota
-	ErrorTypeServer
-	ErrorTypeNetwork
-	ErrorTypeWebAccess
-	ErrorTypeMobileAccess
+	ErrorTypeUnknown      ErrorType = "unknown"
+	ErrorTypeServer       ErrorType = "server"
+	ErrorTypeNetwork      ErrorType = "network"
+	ErrorTypeWebAccess    ErrorType = "web_access"
+	ErrorTypeMobileAccess ErrorType = "mobile_access"
 )
 
-type SourceType int
+type SourceType string
 
 const (
-	SourceTypeUnknown SourceType = iota
-	SourceTypeUser
-	SourceTypeInspector
+	SourceTypeUnknown   SourceType = "unknown"
+	SourceTypeUser      SourceType = "user"
+	SourceTypeInspector SourceType = "inspector"
 )

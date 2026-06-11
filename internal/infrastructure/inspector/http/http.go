@@ -36,7 +36,7 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 			return inspector.InspectionResult{}, fmt.Errorf("http inspector: unable to send  inspector: %w", err)
 		}
 		res := inspector.InspectionResult{
-			Status: inspector.StatusError,
+			Status: inspector.InspectionStatusError,
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
@@ -51,7 +51,7 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 
 	if _, ok := h.config.ExpectedCodes[resp.StatusCode]; !ok {
 		res := inspector.InspectionResult{
-			Status: inspector.StatusError,
+			Status: inspector.InspectionStatusError,
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
@@ -64,7 +64,7 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	}
 
 	res := inspector.InspectionResult{
-		Status: inspector.StatusSuccess,
+		Status: inspector.InspectionStatusSuccess,
 		Start:  start,
 		End:    time.Now(),
 		Config: h.config,

@@ -13,9 +13,9 @@ type ReportService struct {
 	repo      port.ReportSaver
 }
 
-func NewReportService(notifier port.ReportProcessor, repo port.ReportSaver) *ReportService {
+func NewReportService(processor port.ReportProcessor, repo port.ReportSaver) *ReportService {
 	return &ReportService{
-		processor: notifier,
+		processor: processor,
 		repo:      repo,
 	}
 }

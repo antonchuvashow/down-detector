@@ -1,4 +1,4 @@
-package infrastructure
+package submitter
 
 import (
 	"go.uber.org/zap"

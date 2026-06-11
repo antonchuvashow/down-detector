@@ -8,8 +8,8 @@ type InspectionStatus string
 type ExtraInspectionInfo any
 
 const (
-	StatusSuccess InspectionStatus = "success"
-	StatusError   InspectionStatus = "error"
+	InspectionStatusSuccess InspectionStatus = "success"
+	InspectionStatusError   InspectionStatus = "error"
 )
 
 type InspectionResult struct {

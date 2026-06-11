@@ -58,7 +58,7 @@ func (i *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 
 func (i *Inspector) determineStatus(stats *probing.Statistics) inspector.InspectionStatus {
 	if stats.PacketLoss <= 1-*i.config.Threshold {
-		return inspector.StatusSuccess
+		return inspector.InspectionStatusSuccess
 	}
-	return inspector.StatusError
+	return inspector.InspectionStatusError
 }

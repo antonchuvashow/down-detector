@@ -16,19 +16,19 @@ func (c *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	result := inspector.InspectionResult{
 		Start:  time.Now(),
 		Config: c.config,
-		Status: inspector.StatusSuccess,
+		Status: inspector.InspectionStatusSuccess,
 	}
-	allResults := make(map[string]inspector.InspectionResult)
+	allResults := ExtraInspectionInfo{make(map[string]inspector.InspectionResult)}
 
 	for name, insp := range c.config.Inspectors {
 		partialResult, err := insp.Inspect(route)
 		if err != nil {
 			return inspector.InspectionResult{}, fmt.Errorf("error in %s inspector: %w", name, err)
 		}
-		if partialResult.Status == inspector.StatusError {
-			result.Status = inspector.StatusError
+		if partialResult.Status == inspector.InspectionStatusError {
+			result.Status = inspector.InspectionStatusError
 		}
-		allResults[name] = partialResult
+		allResults.Results[name] = partialResult
 	}
 	result.Extra = allResults
 
