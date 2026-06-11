@@ -9,17 +9,17 @@ type FactoryKey string
 
 type FactoryRegistry struct {
 	typeToKey map[reflect.Type]FactoryKey
-	factories map[FactoryKey]InspectorFactory
+	factories map[FactoryKey]Factory
 }
 
 func NewFactoryRegistry() FactoryRegistry {
 	return FactoryRegistry{
-		factories: make(map[FactoryKey]InspectorFactory),
+		factories: make(map[FactoryKey]Factory),
 		typeToKey: make(map[reflect.Type]FactoryKey),
 	}
 }
 
-func (r *FactoryRegistry) Register(key FactoryKey, inspectorType reflect.Type, factory InspectorFactory) {
+func (r *FactoryRegistry) Register(key FactoryKey, inspectorType reflect.Type, factory Factory) {
 	if _, exists := r.factories[key]; exists {
 		panic(fmt.Sprintf("factory with key %s already registered", string(key)))
 	}
@@ -28,7 +28,7 @@ func (r *FactoryRegistry) Register(key FactoryKey, inspectorType reflect.Type, f
 	r.typeToKey[inspectorType] = key
 }
 
-func (r *FactoryRegistry) Get(key FactoryKey) (InspectorFactory, error) {
+func (r *FactoryRegistry) Get(key FactoryKey) (Factory, error) {
 	factory, exists := r.factories[key]
 	if !exists {
 		return nil, fmt.Errorf("factory with key %s not found", string(key))

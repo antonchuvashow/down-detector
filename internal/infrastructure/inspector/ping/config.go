@@ -2,22 +2,22 @@ package ping
 
 import "time"
 
-type PingExtraInspectionInfo struct {
+type ExtraInspectionInfo struct {
 	PacketLoss float64
 	MinRtt     time.Duration
 	AvgRtt     time.Duration
 	MaxRtt     time.Duration
 }
 
-type PingInspectorConfig struct {
+type InspectorConfig struct {
 	PingCount *int
 	Interval  *time.Duration
 	Timeout   *time.Duration
 	Threshold *float64
 }
 
-func NewInspectorConfig() *PingInspectorConfig {
-	return &PingInspectorConfig{
+func NewInspectorConfig() *InspectorConfig {
+	return &InspectorConfig{
 		PingCount: new(5),
 		Interval:  new(time.Second),
 		Timeout:   new(5 * time.Second),

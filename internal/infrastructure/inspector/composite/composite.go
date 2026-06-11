@@ -8,11 +8,11 @@ import (
 	routedomain "detector/internal/route/domain"
 )
 
-type CompositeInspector struct {
-	config CompositeInspectorConfig
+type Inspector struct {
+	config InspectorConfig
 }
 
-func (c *CompositeInspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
+func (c *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
 	result := inspector.InspectionResult{
 		Start:  time.Now(),
 		Config: c.config,
@@ -35,6 +35,6 @@ func (c *CompositeInspector) Inspect(route routedomain.Route) (inspector.Inspect
 	return result, nil
 }
 
-func NewCompositeInspector(config CompositeInspectorConfig) *CompositeInspector {
-	return &CompositeInspector{config: config}
+func NewCompositeInspector(config InspectorConfig) *Inspector {
+	return &Inspector{config: config}
 }

@@ -15,21 +15,12 @@ type pingInspectorConfigJSON struct {
 	Threshold *float64       `json:"threshold"`
 }
 
-type PingInspectorFactory struct {
+type InspectorFactory struct {
 }
 
-func (p *PingInspectorFactory) Create(_ *inspector.FactoryRegistry, config inspector.Config) (inspector.Inspector, error) {
-	cfg, ok := config.(PingInspectorConfig)
-	if !ok {
-		return nil, fmt.Errorf("ping inspector factory: invalid config of type %T", config)
-	}
-	return NewInspector(cfg), nil
-
-}
-
-func (p *PingInspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
+func (p *InspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
 	// It may cause potential boilerplate and compatability issues.
-	obj, ok := object.(*PingInspector)
+	obj, ok := object.(*Inspector)
 	if !ok {
 		return nil, fmt.Errorf("ping inspector factory: invalid object of type %T", object)
 	}
@@ -42,13 +33,13 @@ func (p *PingInspectorFactory) Marshal(_ *inspector.FactoryRegistry, object insp
 	return marshal, nil
 }
 
-func (p *PingInspectorFactory) Unmarshal(_ *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
+func (p *InspectorFactory) Unmarshal(_ *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
 	var configJSON pingInspectorConfigJSON
 	err := json.Unmarshal(data, &configJSON)
 	if err != nil {
 		return nil, fmt.Errorf("ping inspector factory: failed to unmarshal config: %w", err)
 	}
 
-	config := PingInspectorConfig(configJSON)
+	config := InspectorConfig(configJSON)
 	return NewInspector(config), nil
 }

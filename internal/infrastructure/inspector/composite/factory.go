@@ -16,20 +16,11 @@ type factoryConfigJSON struct {
 	Config     string `json:"config"`
 }
 
-type CompositeInspectorFactory struct {
+type InspectorFactory struct {
 }
 
-func (c *CompositeInspectorFactory) Create(registry *inspector.FactoryRegistry, config inspector.Config) (inspector.Inspector, error) {
-	cfg, ok := config.(CompositeInspectorConfig)
-	if !ok {
-		return nil, fmt.Errorf("composite inspector factory: invalid config of type %T", config)
-	}
-
-	return NewCompositeInspector(cfg), nil
-}
-
-func (c *CompositeInspectorFactory) Marshal(registry *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
-	obj, ok := object.(*CompositeInspector)
+func (c *InspectorFactory) Marshal(registry *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
+	obj, ok := object.(*Inspector)
 	if !ok {
 		return nil, fmt.Errorf("composite inspector factory: invalid object of type %T", object)
 	}
@@ -64,13 +55,13 @@ func (c *CompositeInspectorFactory) Marshal(registry *inspector.FactoryRegistry,
 	return marshal, nil
 }
 
-func (c *CompositeInspectorFactory) Unmarshal(registry *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
+func (c *InspectorFactory) Unmarshal(registry *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
 	var configJSON compositeInspectorConfigJSON
 	err := json.Unmarshal(data, &configJSON)
 	if err != nil {
 		return nil, fmt.Errorf("composite inspector factory: failed to unmarshal config: %w", err)
 	}
-	config := CompositeInspectorConfig{
+	config := InspectorConfig{
 		Inspectors: make(map[string]inspector.Inspector),
 	}
 

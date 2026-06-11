@@ -1,8 +1,9 @@
 package routeapplication
 
 import (
-	routedomain "detector/internal/route/domain"
 	"fmt"
+
+	routedomain "detector/internal/route/domain"
 )
 
 type ErrRouteNotFound struct {

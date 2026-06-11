@@ -1,8 +1,9 @@
 package application
 
 import (
-	routedomain "detector/internal/route/domain"
 	"fmt"
+
+	routedomain "detector/internal/route/domain"
 )
 
 type ErrInspectorNotFound struct {

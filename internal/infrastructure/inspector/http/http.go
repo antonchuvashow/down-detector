@@ -11,16 +11,16 @@ import (
 	routedomain "detector/internal/route/domain"
 )
 
-type HttpInspector struct {
-	config HttpInspectorConfig
+type Inspector struct {
+	config InspectorConfig
 }
 
-func NewInspector(config HttpInspectorConfig) *HttpInspector {
+func NewInspector(config InspectorConfig) *Inspector {
 	// TODO: Add validation of config
-	return &HttpInspector{config: config}
+	return &Inspector{config: config}
 }
 
-func (h *HttpInspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
+func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
 	client := http.Client{Timeout: *h.config.Timeout}
 	req, err := http.NewRequest(*h.config.Method, route.URL.String(), nil)
 	if err != nil {
@@ -40,7 +40,7 @@ func (h *HttpInspector) Inspect(route routedomain.Route) (inspector.InspectionRe
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
-			Extra: HttpExtraInspectionInfo{
+			Extra: ExtraInspectionInfo{
 				IsTimeout:  true,
 				StatusCode: -1,
 			},
@@ -55,7 +55,7 @@ func (h *HttpInspector) Inspect(route routedomain.Route) (inspector.InspectionRe
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
-			Extra: HttpExtraInspectionInfo{
+			Extra: ExtraInspectionInfo{
 				IsTimeout:  false,
 				StatusCode: resp.StatusCode,
 			},
@@ -68,7 +68,7 @@ func (h *HttpInspector) Inspect(route routedomain.Route) (inspector.InspectionRe
 		Start:  start,
 		End:    time.Now(),
 		Config: h.config,
-		Extra: HttpExtraInspectionInfo{
+		Extra: ExtraInspectionInfo{
 			IsTimeout:  false,
 			StatusCode: resp.StatusCode,
 		},

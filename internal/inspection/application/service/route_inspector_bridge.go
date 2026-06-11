@@ -21,27 +21,26 @@ func NewRouteInspectorBridge(factoryRegistry *inspector.FactoryRegistry, reposit
 	}
 }
 
-func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, key inspector.FactoryKey, config inspector.Config) error {
+func (b *RouteInspectorBridge) Register(routeID routedomain.RouteID, instance inspector.Inspector) error {
 	// TODO: Check if route exists, if not - return error
 
-	factory, err := b.factoryRegistry.Get(key)
+	factoryKey, err := b.factoryRegistry.Find(instance)
 	if err != nil {
-		return fmt.Errorf("route inspector bridge: failed to get inspector factory: %w", err)
+		return fmt.Errorf("route inspector bridge: could not find factory key for inspector of type %T: %w", instance, err)
+	}
+	factory, err := b.factoryRegistry.Get(factoryKey)
+	if err != nil {
+		return fmt.Errorf("route inspector bridge: could not find factory for key %s: %w", factoryKey, err)
 	}
 
-	object, err := factory.Create(b.factoryRegistry, config) // May be removed and delegated to controller part
-	if err != nil {
-		return fmt.Errorf("route inspector bridge: failed to create inspector: %w", err)
-	}
-
-	serializedConfig, err := factory.Marshal(b.factoryRegistry, object)
+	serializedConfig, err := factory.Marshal(b.factoryRegistry, instance)
 	if err != nil {
 		return fmt.Errorf("route inspector bridge: failed to marshal inspector config: %w", err)
 	}
 
 	routeMethod := inspectiondto.RouteMethod{
 		RouteID:          routeID,
-		FactoryKey:       key,
+		FactoryKey:       factoryKey,
 		SerializedConfig: serializedConfig,
 	}
 

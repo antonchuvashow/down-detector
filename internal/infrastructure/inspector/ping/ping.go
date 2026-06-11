@@ -10,17 +10,17 @@ import (
 	probing "github.com/prometheus-community/pro-bing"
 )
 
-type PingInspector struct {
-	config PingInspectorConfig
+type Inspector struct {
+	config InspectorConfig
 }
 
-func NewInspector(config PingInspectorConfig) *PingInspector {
-	return &PingInspector{
+func NewInspector(config InspectorConfig) *Inspector {
+	return &Inspector{
 		config: config,
 	}
 }
 
-func (i *PingInspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
+func (i *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
 	pinger, err := probing.NewPinger(route.URL.Hostname())
 	if err != nil {
 		return inspector.InspectionResult{}, fmt.Errorf("ping inspector: failed to create pinger: %w", err)
@@ -47,7 +47,7 @@ func (i *PingInspector) Inspect(route routedomain.Route) (inspector.InspectionRe
 		Start:  start,
 		End:    time.Now(),
 		Config: i.config,
-		Extra: PingExtraInspectionInfo{
+		Extra: ExtraInspectionInfo{
 			PacketLoss: stats.PacketLoss,
 			MinRtt:     stats.MinRtt,
 			AvgRtt:     stats.AvgRtt,
@@ -56,7 +56,7 @@ func (i *PingInspector) Inspect(route routedomain.Route) (inspector.InspectionRe
 	}, nil
 }
 
-func (i *PingInspector) determineStatus(stats *probing.Statistics) inspector.InspectionStatus {
+func (i *Inspector) determineStatus(stats *probing.Statistics) inspector.InspectionStatus {
 	if stats.PacketLoss <= 1-*i.config.Threshold {
 		return inspector.StatusSuccess
 	}

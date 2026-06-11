@@ -1,9 +1,10 @@
 package routeapplication
 
 import (
+	"fmt"
+
 	routedto "detector/internal/route/application/dto"
 	routedomain "detector/internal/route/domain"
-	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -47,10 +48,10 @@ func (s *RouteService) Delete(id routedomain.RouteID) error {
 }
 
 func newRouteID() (routedomain.RouteID, error) {
-	uuid, err := uuid.NewV7()
+	routeID, err := uuid.NewV7()
 	if err != nil {
-		return routedomain.RouteID(""), err
+		return "", err
 	}
 
-	return routedomain.RouteID(uuid.String()), nil
+	return routedomain.RouteID(routeID.String()), nil
 }

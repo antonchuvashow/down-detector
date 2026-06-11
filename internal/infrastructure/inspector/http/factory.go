@@ -16,20 +16,11 @@ type httpInspectorConfigJSON struct {
 	Header        http.Header    `json:"header"`
 }
 
-type HttpInspectorFactory struct {
+type InspectorFactory struct {
 }
 
-func (h *HttpInspectorFactory) Create(_ *inspector.FactoryRegistry, config inspector.Config) (inspector.Inspector, error) {
-	cfg, ok := config.(HttpInspectorConfig)
-	if !ok {
-		return nil, fmt.Errorf("http inspector factory: invalid config of type %T", config)
-	}
-
-	return NewInspector(cfg), nil
-}
-
-func (h *HttpInspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
-	obj, ok := object.(*HttpInspector)
+func (h *InspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspector.Inspector) (inspector.SerializedConfig, error) {
+	obj, ok := object.(*Inspector)
 	if !ok {
 		return nil, fmt.Errorf("http inspector factory: invalid object of type %T", object)
 	}
@@ -49,14 +40,14 @@ func (h *HttpInspectorFactory) Marshal(_ *inspector.FactoryRegistry, object insp
 	return marshal, nil
 }
 
-func (h *HttpInspectorFactory) Unmarshal(_ *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
+func (h *InspectorFactory) Unmarshal(_ *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
 	var configJSON httpInspectorConfigJSON
 	err := json.Unmarshal(data, &configJSON)
 	if err != nil {
 		return nil, fmt.Errorf("http inspector factory: failed to unmarshal config: %w", err)
 	}
 
-	config := HttpInspectorConfig{
+	config := InspectorConfig{
 		Timeout:       configJSON.Timeout,
 		Method:        configJSON.Method,
 		Header:        configJSON.Header,

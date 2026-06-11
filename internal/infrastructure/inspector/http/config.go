@@ -5,24 +5,24 @@ import (
 	"time"
 )
 
-type HttpExtraInspectionInfo struct {
+type ExtraInspectionInfo struct {
 	IsTimeout  bool
 	StatusCode int
 }
 
-type HttpInspectorConfig struct {
+type InspectorConfig struct {
 	Timeout       *time.Duration
 	ExpectedCodes map[int]struct{}
 	Method        *string
 	Header        http.Header
 }
 
-func NewInspectorConfig() *HttpInspectorConfig {
+func NewInspectorConfig() *InspectorConfig {
 	expectedCodes := make(map[int]struct{})
 	expectedCodes[200] = struct{}{}
 	expectedCodes[204] = struct{}{}
 
-	return &HttpInspectorConfig{
+	return &InspectorConfig{
 		Timeout:       new(time.Second),
 		ExpectedCodes: expectedCodes,
 		Method:        new("HEAD"),
