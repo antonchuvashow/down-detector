@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS routes;
+DROP TABLE IF EXISTS route_methods;

@@ -15,10 +15,14 @@ import (
 
 type ReportSubmitter struct {
 	reportService *service.ReportService
+	descriptor    domain.Descriptor
 }
 
-func NewReportSubmitter(reportService *service.ReportService) *ReportSubmitter {
-	return &ReportSubmitter{reportService: reportService}
+func NewReportSubmitter(reportService *service.ReportService, descriptor domain.Descriptor) *ReportSubmitter {
+	return &ReportSubmitter{
+		reportService: reportService,
+		descriptor:    descriptor,
+	}
 }
 
 func (s *ReportSubmitter) Submit(result inspector.InspectionResult, routeID routedomain.RouteID) error {
@@ -31,7 +35,7 @@ func (s *ReportSubmitter) Submit(result inspector.InspectionResult, routeID rout
 		RouteID:    routeID,
 		ErrorTypes: collectedErrors,
 		Time:       result.Start,
-		Descriptor: domain.Descriptor{Source: domain.SourceTypeInspector},
+		Descriptor: s.descriptor,
 		Summary: domain.Summary{
 			Latency: latency,
 		},

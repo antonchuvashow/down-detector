@@ -40,16 +40,57 @@ services:
       com.project.service: "clickhouse"
       com.project.env: "${COMPOSE_ENV:-local}"
 
-  migrate:
+  detector-postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-detector}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-detector}
+      POSTGRES_DB: ${POSTGRES_DB:-detector}
+    ports:
+      - "5432:5432"
+    volumes:
+      - detector-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-detector} -d ${POSTGRES_DB:-detector}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch_net
+
+  postgres-migrate:
     image: migrate/migrate:v4.17.0
     profiles:
       - tools
     volumes:
-      - ./migrations:/migrations:ro
+      - ./migrations/postgres:/migrations:ro
     command:
       [
         "-path",
-        "/migrations/clickhouse",
+        "/migrations",
+        "-database",
+        "postgres://${POSTGRES_USER:-detector}:${POSTGRES_PASSWORD:-detector}@detector-postgres:5432/${POSTGRES_DB:-detector}?sslmode=disable",
+        "up"
+      ]
+    depends_on:
+      detector-postgres:
+        condition: service_healthy
+    networks:
+      - ch_net
+    labels:
+      com.project.service: "postgres-migrate"
+
+  clickhouse-migrate:
+    image: migrate/migrate:v4.17.0
+    profiles:
+      - tools
+    volumes:
+      - ./migrations/clickhouse:/migrations:ro
+    command:
+      [
+        "-path",
+        "/migrations",
         "-database",
         "clickhouse://clickhouse:9000/?database=${CLICKHOUSE_DB}&username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&x-multi-statement=true",
         "up"
@@ -60,9 +101,9 @@ services:
     networks:
       - ch_net
     labels:
-      com.project.service: "migrate"
+      com.project.service: "clickhouse-migrate"
 
-  postgres:
+  superset-postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
@@ -79,7 +120,7 @@ services:
     networks:
       - ch_net
 
-  redis:
+  superset-redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --appendonly yes
@@ -102,9 +143,9 @@ services:
       - init
     restart: "no"
     depends_on:
-      postgres:
+      superset-postgres:
         condition: service_healthy
-      redis:
+      superset-redis:
         condition: service_healthy
     command:
       - /bin/bash
@@ -130,12 +171,12 @@ services:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
 
-      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@postgres:5432/superset
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@superset-postgres:5432/superset
 
-      REDIS_HOST: redis
+      REDIS_HOST: superset-redis
       REDIS_PORT: "6379"
       CACHE_REDIS_DB: "1"
-      RATELIMIT_STORAGE_URI: redis://redis:6379/4
+      RATELIMIT_STORAGE_URI: redis://superset-redis:6379/4
 
       SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
       SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
@@ -159,20 +200,20 @@ services:
     depends_on:
       clickhouse:
         condition: service_healthy
-      postgres:
+      superset-postgres:
         condition: service_healthy
-      redis:
+      superset-redis:
         condition: service_healthy
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
 
-      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@postgres:5432/superset
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@superset-postgres:5432/superset
 
-      REDIS_HOST: redis
+      REDIS_HOST: superset-redis
       REDIS_PORT: "6379"
       CACHE_REDIS_DB: "1"
-      RATELIMIT_STORAGE_URI: redis://redis:6379/4
+      RATELIMIT_STORAGE_URI: redis://superset-redis:6379/4
     volumes:
       - superset-home:/app/superset_home
       - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
@@ -207,6 +248,7 @@ volumes:
   superset-db:
   superset-redis:
   superset-home:
+  detector-postgres-data:
 
 networks:
   ch_net:

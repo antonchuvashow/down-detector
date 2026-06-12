@@ -26,9 +26,9 @@ func NewRepository(conn clickhouse.Conn, logger *zap.Logger) *Repository {
 func (r *Repository) Save(report domain.Report) error {
 	const query = `
         INSERT INTO reports
-            (time, route_id, success, error_types, source, latency_ms)
+            (time, route_id, success, error_types, latency_ms, source, latitude, longitude, ip, platform)
         VALUES
-            (?, ?, ?, ?, ?, ?)`
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// TODO: context is not passed!
 	err := r.conn.Exec(context.Background(), query,
@@ -36,8 +36,12 @@ func (r *Repository) Save(report domain.Report) error {
 		report.RouteID,
 		report.Success,
 		errorTypesToStrings(report.ErrorTypes),
-		string(report.Descriptor.Source),
 		report.Summary.Latency.Milliseconds(),
+		string(report.Descriptor.Source),
+		report.Descriptor.Latitude,
+		report.Descriptor.Longitude,
+		report.Descriptor.IP.String(),
+		report.Descriptor.Platform,
 	)
 	if err != nil {
 		r.logger.Error("failed to save report",
@@ -64,7 +68,7 @@ func (r *Repository) SaveBatch(ctx context.Context, reports []domain.Report) err
 
 	batch, err := r.conn.PrepareBatch(ctx, `
         INSERT INTO reports
-            (time, route_id, success, error_types, source, latency_ms)`)
+            (time, route_id, success, error_types, latency_ms, source, latitude, longitude, ip, platform)`)
 	if err != nil {
 		return fmt.Errorf("prepare batch: %w", err)
 	}
@@ -75,8 +79,12 @@ func (r *Repository) SaveBatch(ctx context.Context, reports []domain.Report) err
 			report.RouteID,
 			report.Success,
 			errorTypesToStrings(report.ErrorTypes),
-			string(report.Descriptor.Source),
 			report.Summary.Latency.Milliseconds(),
+			string(report.Descriptor.Source),
+			report.Descriptor.Latitude,
+			report.Descriptor.Longitude,
+			report.Descriptor.IP.String(),
+			report.Descriptor.Platform,
 		); err != nil {
 			return fmt.Errorf("append to batch: %w", err)
 		}
