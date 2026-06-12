@@ -16,41 +16,39 @@ import (
 	"detector/internal/infrastructure/inspector/composite"
 	"detector/internal/infrastructure/inspector/http"
 	"detector/internal/infrastructure/inspector/ping"
-	"detector/internal/infrastructure/repository/clickhouse/connection"
-	"detector/internal/infrastructure/repository/clickhouse/report"
-	connection2 "detector/internal/infrastructure/repository/postgres/connection"
-	route2 "detector/internal/infrastructure/repository/postgres/route"
-	"detector/internal/infrastructure/repository/postgres/routemethod"
-	inspectionservice "detector/internal/inspection/application/service"
-	"detector/internal/inspection/domain/inspector"
-	application2 "detector/internal/report/application"
-	service2 "detector/internal/report/application/service"
+	"detector/internal/infrastructure/repository/clickhouse/chconn"
+	"detector/internal/infrastructure/repository/clickhouse/chreport"
+	"detector/internal/infrastructure/repository/postgres"
+	"detector/internal/infrastructure/repository/postgres/pgroute"
+	"detector/internal/infrastructure/repository/postgres/pgrouteassignment"
+	inspectorapp "detector/internal/inspector/application"
+	inspector "detector/internal/inspector/domain"
+	reportapp "detector/internal/report/application"
 	"detector/internal/report/domain"
-	routedomain "detector/internal/route/domain"
-	"detector/internal/scheduler/application"
-	"detector/internal/scheduler/application/submitter"
-
 	"detector/internal/route/application"
 	"detector/internal/route/application/dto"
+	route "detector/internal/route/domain"
+	"detector/internal/scheduler/application"
+	"detector/internal/scheduler/application/submitter"
 )
 
 func main() {
-	postgresConfig := connection2.ConfigFromEnv()
-	postgresConn, err := connection2.New(postgresConfig)
+	postgresConfig := postgres.ConfigFromEnv()
+	postgresConn, err := postgres.New(postgresConfig)
 	if err != nil {
 		panic(err)
 	}
 
-	reportSubmitterDescriptor := domain.Descriptor{
-		Source:    domain.SourceTypeInspector,
+	reportSubmitterDescriptor := report.Descriptor{
+		Source:    report.SourceTypeInspector,
 		Latitude:  55.160023,
 		Longitude: 61.401998,
 		IP:        net.ParseIP(""),
-		Platform:  domain.PlatformTypeIOS,
+		Platform:  report.PlatformTypeIOS,
 	}
 
-	routeRepo := route2.NewPostgresRouteRepository(postgresConn)
-	routeService := routeapplication.NewRouteService(routeRepo)
+	routeRepo := pgroute.NewRepository(postgresConn)
+	routeService := routeapp.NewService(routeRepo)
 	bridge := createBridge(postgresConn)
 
 	registerRoute("", routeService, routeRepo, bridge)
@@ -61,26 +59,26 @@ func main() {
 	defer func(logger *zap.Logger) {
 		_ = logger.Sync()
 	}(logger)
-	processor := application2.NewReportProcessor(logger)
-	cfg := connection.Config{
+	processor := reportapp.NewPrintProcessor(logger)
+	cfg := chconn.Config{
 		Addr:     "localhost:9000",
 		Database: "analytics",
 		Username: "dev",
 		Password: "password",
 	}
 
-	conn, err := connection.New(cfg)
+	conn, err := chconn.New(cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	reportsaver := report.NewRepository(conn, logger)
-	reportService := service2.NewReportService(processor, reportsaver)
+	reportsaver := chreport.NewRepository(conn, logger)
+	reportService := reportapp.NewService(processor, reportsaver)
 	printSubmitter := submitter.NewReportSubmitter(reportService, reportSubmitterDescriptor)
 
 	cronJob := gocron.CronJob("*/10 * * * * *", true)
 
-	sch := application.NewScheduler(routeService, bridge, printSubmitter, cronJob, logger)
+	sch := schedulerapp.NewScheduler(routeService, bridge, printSubmitter, cronJob, logger)
 	err = sch.Start()
 	if err != nil {
 		logger.Error(err.Error())
@@ -91,7 +89,7 @@ func main() {
 
 	<-ctx.Done()
 
-	defer func(sch *application.Scheduler) {
+	defer func(sch *schedulerapp.Scheduler) {
 		err := sch.Stop()
 		if err != nil {
 			logger.Error(err.Error())
@@ -99,17 +97,17 @@ func main() {
 	}(sch)
 }
 
-func registerRoute(domain string, routeService *routeapplication.RouteService, routeRepo *route2.Repository, bridge *inspectionservice.RouteInspectorBridge) {
+func registerRoute(domain string, routeService *routeapp.Service, routeRepo *pgroute.Repository, bridge *inspectorapp.RouteInspectorBridge) {
 	u := url.URL{Host: domain}
 	routes, err := routeRepo.Search(u)
 	if err != nil {
 		panic(err)
 	}
-	var route routedomain.Route
+	var rt route.Route
 	if len(routes) == 0 {
-		route, _ = routeService.Add(routedto.AddRouteCommand{URL: u})
+		rt, _ = routeService.Add(routedto.AddCommand{URL: u})
 	} else if len(routes) == 1 {
-		route = routes[0]
+		rt = routes[0]
 	} else {
 		panic("too many routes")
 	}
@@ -121,28 +119,28 @@ func registerRoute(domain string, routeService *routeapplication.RouteService, r
 	pingInspector := ping.NewInspector(*cfgPing)
 	// httpInspector := http.NewInspector(*cfgHttp)
 
-	compositeInspector := composite.NewCompositeInspector(composite.InspectorConfig{
+	compositeInspector := composite.NewInspector(composite.InspectorConfig{
 		Inspectors: map[string]inspector.Inspector{
 			"ping": pingInspector,
 			// "http": httpInspector,
 		},
 	})
 
-	err = bridge.Register(route.ID, compositeInspector)
+	err = bridge.Register(rt.ID, compositeInspector)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func createBridge(postgresConn *sql.DB) *inspectionservice.RouteInspectorBridge {
-	repo := routemethod.NewPostgresRouteMethodRepository(postgresConn)
+func createBridge(postgresConn *sql.DB) *inspectorapp.RouteInspectorBridge {
+	repo := pgrouteassignment.NewRepository(postgresConn)
 
 	registry := inspector.NewFactoryRegistry()
 	registry.Register("ping", reflect.TypeFor[*ping.Inspector](), &ping.InspectorFactory{})
 	registry.Register("http", reflect.TypeFor[*http.Inspector](), &http.InspectorFactory{})
 	registry.Register("composite", reflect.TypeFor[*composite.Inspector](), &composite.InspectorFactory{})
 
-	riBridge := inspectionservice.NewRouteInspectorBridge(&registry, repo)
+	riBridge := inspectorapp.NewRouteInspectorBridge(&registry, repo)
 
 	return &riBridge
 }

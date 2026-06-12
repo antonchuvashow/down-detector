@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"detector/internal/inspection/domain/inspector"
+	"detector/internal/inspector/domain"
 )
 
-type httpInspectorConfigJSON struct {
+type inspectorConfigJSON struct {
 	Timeout       *time.Duration `json:"timeout"`
 	ExpectedCodes []int          `json:"expected_codes"`
 	Method        *string        `json:"method"`
@@ -25,7 +25,7 @@ func (h *InspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspecto
 		return nil, fmt.Errorf("http inspector factory: invalid object of type %T", object)
 	}
 
-	configJSON := httpInspectorConfigJSON{
+	configJSON := inspectorConfigJSON{
 		Timeout:       obj.config.Timeout,
 		Method:        obj.config.Method,
 		Header:        obj.config.Header,
@@ -41,7 +41,7 @@ func (h *InspectorFactory) Marshal(_ *inspector.FactoryRegistry, object inspecto
 }
 
 func (h *InspectorFactory) Unmarshal(_ *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
-	var configJSON httpInspectorConfigJSON
+	var configJSON inspectorConfigJSON
 	err := json.Unmarshal(data, &configJSON)
 	if err != nil {
 		return nil, fmt.Errorf("http inspector factory: failed to unmarshal config: %w", err)

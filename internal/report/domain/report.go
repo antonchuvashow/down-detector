@@ -1,14 +1,14 @@
-package domain
+package report
 
 import (
 	"time"
 
-	routedomain "detector/internal/route/domain"
+	"detector/internal/route/domain"
 )
 
 type Report struct {
 	Success    bool
-	RouteID    routedomain.RouteID
+	RouteID    route.ID
 	ErrorTypes map[ErrorType]struct{}
 	Time       time.Time
 	Descriptor Descriptor

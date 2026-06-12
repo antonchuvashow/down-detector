@@ -1,23 +1,23 @@
-package routeapplication
+package routeapp
 
 import (
 	"fmt"
 
-	routedomain "detector/internal/route/domain"
+	"detector/internal/route/domain"
 )
 
-type ErrRouteNotFound struct {
-	ID routedomain.RouteID
+type ErrNotFound struct {
+	ID route.ID
 }
 
-func (e ErrRouteNotFound) Error() string {
+func (e ErrNotFound) Error() string {
 	return fmt.Sprintf("route with ID %v not found", e.ID)
 }
 
-type ErrRouteAlreadyExists struct {
-	ID routedomain.RouteID
+type ErrAlreadyExists struct {
+	ID route.ID
 }
 
-func (e ErrRouteAlreadyExists) Error() string {
+func (e ErrAlreadyExists) Error() string {
 	return fmt.Sprintf("route with ID %v already exists", e.ID)
 }

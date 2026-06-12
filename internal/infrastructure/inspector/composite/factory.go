@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"detector/internal/inspection/domain/inspector"
+	"detector/internal/inspector/domain"
 )
 
-type compositeInspectorConfigJSON struct {
+type inspectorConfigJSON struct {
 	Inspectors map[string]factoryConfigJSON `json:"inspectors"`
 }
 
@@ -24,7 +24,7 @@ func (c *InspectorFactory) Marshal(registry *inspector.FactoryRegistry, object i
 	if !ok {
 		return nil, fmt.Errorf("composite inspector factory: invalid object of type %T", object)
 	}
-	configJSON := compositeInspectorConfigJSON{
+	configJSON := inspectorConfigJSON{
 		Inspectors: make(map[string]factoryConfigJSON),
 	}
 
@@ -56,7 +56,7 @@ func (c *InspectorFactory) Marshal(registry *inspector.FactoryRegistry, object i
 }
 
 func (c *InspectorFactory) Unmarshal(registry *inspector.FactoryRegistry, data inspector.SerializedConfig) (inspector.Inspector, error) {
-	var configJSON compositeInspectorConfigJSON
+	var configJSON inspectorConfigJSON
 	err := json.Unmarshal(data, &configJSON)
 	if err != nil {
 		return nil, fmt.Errorf("composite inspector factory: failed to unmarshal config: %w", err)
@@ -77,5 +77,5 @@ func (c *InspectorFactory) Unmarshal(registry *inspector.FactoryRegistry, data i
 		config.Inspectors[name] = instance
 	}
 
-	return NewCompositeInspector(config), nil
+	return NewInspector(config), nil
 }

@@ -4,29 +4,29 @@ import (
 	"fmt"
 	"time"
 
-	"detector/internal/inspection/domain/inspector"
-	routedomain "detector/internal/route/domain"
+	"detector/internal/inspector/domain"
+	"detector/internal/route/domain"
 )
 
 type Inspector struct {
 	config InspectorConfig
 }
 
-func (c *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
-	result := inspector.InspectionResult{
+func (c *Inspector) Inspect(route route.Route) (inspector.Result, error) {
+	result := inspector.Result{
 		Start:  time.Now(),
 		Config: c.config,
-		Status: inspector.InspectionStatusSuccess,
+		Status: inspector.ResultStatusSuccess,
 	}
-	allResults := ExtraInspectionInfo{make(map[string]inspector.InspectionResult)}
+	allResults := ExtraInspectionInfo{make(map[string]inspector.Result)}
 
 	for name, insp := range c.config.Inspectors {
 		partialResult, err := insp.Inspect(route)
 		if err != nil {
-			return inspector.InspectionResult{}, fmt.Errorf("error in %s inspector: %w", name, err)
+			return inspector.Result{}, fmt.Errorf("error in %s inspector: %w", name, err)
 		}
-		if partialResult.Status == inspector.InspectionStatusError {
-			result.Status = inspector.InspectionStatusError
+		if partialResult.Status == inspector.ResultStatusError {
+			result.Status = inspector.ResultStatusError
 		}
 		allResults.Results[name] = partialResult
 	}
@@ -35,6 +35,6 @@ func (c *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	return result, nil
 }
 
-func NewCompositeInspector(config InspectorConfig) *Inspector {
+func NewInspector(config InspectorConfig) *Inspector {
 	return &Inspector{config: config}
 }

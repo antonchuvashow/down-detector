@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"detector/internal/inspection/domain/inspector"
-	routedomain "detector/internal/route/domain"
+	"detector/internal/inspector/domain"
+	"detector/internal/route/domain"
 )
 
 type Inspector struct {
@@ -20,11 +20,11 @@ func NewInspector(config InspectorConfig) *Inspector {
 	return &Inspector{config: config}
 }
 
-func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
+func (h *Inspector) Inspect(route route.Route) (inspector.Result, error) {
 	client := http.Client{Timeout: *h.config.Timeout}
 	req, err := http.NewRequest(*h.config.Method, route.URL.String(), nil)
 	if err != nil {
-		return inspector.InspectionResult{}, fmt.Errorf("http inspector: unable to create http request: %w", err)
+		return inspector.Result{}, fmt.Errorf("http inspector: unable to create http request: %w", err)
 	}
 
 	req.Header = h.config.Header
@@ -33,10 +33,10 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	if err != nil {
 		err, _ := errors.AsType[*url.Error](err)
 		if !err.Timeout() {
-			return inspector.InspectionResult{}, fmt.Errorf("http inspector: unable to send  inspector: %w", err)
+			return inspector.Result{}, fmt.Errorf("http inspector: unable to send  inspector: %w", err)
 		}
-		res := inspector.InspectionResult{
-			Status: inspector.InspectionStatusError,
+		res := inspector.Result{
+			Status: inspector.ResultStatusError,
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
@@ -50,8 +50,8 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	defer resp.Body.Close()
 
 	if _, ok := h.config.ExpectedCodes[resp.StatusCode]; !ok {
-		res := inspector.InspectionResult{
-			Status: inspector.InspectionStatusError,
+		res := inspector.Result{
+			Status: inspector.ResultStatusError,
 			Start:  start,
 			End:    time.Now(),
 			Config: h.config,
@@ -63,8 +63,8 @@ func (h *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 		return res, nil
 	}
 
-	res := inspector.InspectionResult{
-		Status: inspector.InspectionStatusSuccess,
+	res := inspector.Result{
+		Status: inspector.ResultStatusSuccess,
 		Start:  start,
 		End:    time.Now(),
 		Config: h.config,

@@ -1,4 +1,4 @@
-package application
+package schedulerapp
 
 import (
 	"fmt"
@@ -6,30 +6,30 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 
-	inspectionservice "detector/internal/inspection/application/service"
-	routeapplication "detector/internal/route/application"
+	"detector/internal/inspector/application"
+	"detector/internal/route/application"
 )
 
 type Scheduler struct {
-	routeService              *routeapplication.RouteService
-	routeInspectorBridge      *inspectionservice.RouteInspectorBridge
-	inspectionResultSubmitter InspectionResultSubmitter
-	cronJob                   gocron.JobDefinition
-	cronScheduler             gocron.Scheduler
-	logger                    *zap.Logger
+	routeService             *routeapp.Service
+	routeInspectorBridge     *inspectorapp.RouteInspectorBridge
+	inspectorResultSubmitter InspectorResultSubmitter
+	cronJob                  gocron.JobDefinition
+	cronScheduler            gocron.Scheduler
+	logger                   *zap.Logger
 }
 
-func NewScheduler(service *routeapplication.RouteService,
-	bridge *inspectionservice.RouteInspectorBridge,
-	submitter InspectionResultSubmitter,
+func NewScheduler(service *routeapp.Service,
+	bridge *inspectorapp.RouteInspectorBridge,
+	submitter InspectorResultSubmitter,
 	cronJob gocron.JobDefinition,
 	logger *zap.Logger) *Scheduler {
 	return &Scheduler{
-		routeService:              service,
-		routeInspectorBridge:      bridge,
-		inspectionResultSubmitter: submitter,
-		cronJob:                   cronJob,
-		logger:                    logger,
+		routeService:             service,
+		routeInspectorBridge:     bridge,
+		inspectorResultSubmitter: submitter,
+		cronJob:                  cronJob,
+		logger:                   logger,
 	}
 }
 
@@ -76,7 +76,7 @@ func (s *Scheduler) tick() {
 			s.logger.Error("error inspecting route:", zap.Error(err))
 			continue
 		}
-		err = s.inspectionResultSubmitter.Submit(result, route.ID)
+		err = s.inspectorResultSubmitter.Submit(result, route.ID)
 		if err != nil {
 			s.logger.Error("error submitting inspection result:", zap.Error(err))
 		}

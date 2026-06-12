@@ -1,10 +1,10 @@
-package routedomain
+package route
 
 import "net/url"
 
-type RouteID string
+type ID string
 
 type Route struct {
-	ID  RouteID
+	ID  ID
 	URL url.URL
 }

@@ -1,9 +1,11 @@
 package composite
 
-import "detector/internal/inspection/domain/inspector"
+import (
+	"detector/internal/inspector/domain"
+)
 
 type ExtraInspectionInfo struct {
-	Results map[string]inspector.InspectionResult
+	Results map[string]inspector.Result
 }
 
 type InspectorConfig struct {

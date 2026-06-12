@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"detector/internal/inspection/domain/inspector"
-	routedomain "detector/internal/route/domain"
+	"detector/internal/inspector/domain"
+	"detector/internal/route/domain"
 
-	probing "github.com/prometheus-community/pro-bing"
+	"github.com/prometheus-community/pro-bing"
 )
 
 type Inspector struct {
@@ -20,10 +20,10 @@ func NewInspector(config InspectorConfig) *Inspector {
 	}
 }
 
-func (i *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult, error) {
+func (i *Inspector) Inspect(route route.Route) (inspector.Result, error) {
 	pinger, err := probing.NewPinger(route.URL.Hostname())
 	if err != nil {
-		return inspector.InspectionResult{}, fmt.Errorf("ping inspector: failed to create pinger: %w", err)
+		return inspector.Result{}, fmt.Errorf("ping inspector: failed to create pinger: %w", err)
 	}
 	if i.config.PingCount != nil {
 		pinger.Count = *i.config.PingCount
@@ -38,11 +38,11 @@ func (i *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	start := time.Now()
 	err = pinger.Run()
 	if err != nil {
-		return inspector.InspectionResult{}, fmt.Errorf("ping inspector: failed to run pinger: %w", err)
+		return inspector.Result{}, fmt.Errorf("ping inspector: failed to run pinger: %w", err)
 	}
 
 	stats := pinger.Statistics()
-	return inspector.InspectionResult{
+	return inspector.Result{
 		Status: i.determineStatus(stats),
 		Start:  start,
 		End:    time.Now(),
@@ -56,9 +56,9 @@ func (i *Inspector) Inspect(route routedomain.Route) (inspector.InspectionResult
 	}, nil
 }
 
-func (i *Inspector) determineStatus(stats *probing.Statistics) inspector.InspectionStatus {
+func (i *Inspector) determineStatus(stats *probing.Statistics) inspector.ResultStatus {
 	if stats.PacketLoss <= 1-*i.config.Threshold {
-		return inspector.InspectionStatusSuccess
+		return inspector.ResultStatusSuccess
 	}
-	return inspector.InspectionStatusError
+	return inspector.ResultStatusError
 }
