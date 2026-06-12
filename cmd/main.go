@@ -14,6 +14,8 @@ import (
 	"detector/internal/infrastructure/inspector/composite"
 	"detector/internal/infrastructure/inspector/http"
 	"detector/internal/infrastructure/inspector/ping"
+	"detector/internal/infrastructure/repository/clickhouse/connection"
+	"detector/internal/infrastructure/repository/clickhouse/report"
 	repository "detector/internal/infrastructure/repository/memory"
 	inspectionservice "detector/internal/inspection/application/service"
 	"detector/internal/inspection/domain/inspector"
@@ -54,9 +56,22 @@ func main() {
 		_ = logger.Sync()
 	}(logger)
 	processor := application2.NewReportProcessor(logger)
-	reportsaver := repository.NewReportSaver()
+	cfg := connection.Config{
+		Addr:     "localhost:9000",
+		Database: "analytics",
+		Username: "dev",
+		Password: "password",
+	}
+
+	conn, err := connection.New(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	reportsaver := report.NewRepository(conn, logger)
 	reportService := service2.NewReportService(processor, reportsaver)
 	printSubmitter := submitter.NewReportSubmitter(reportService)
+
 	cronJob := gocron.CronJob("*/1 * * * *", false)
 
 	sch := application.NewScheduler(service, bridge, printSubmitter, cronJob, logger)

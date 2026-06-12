@@ -25,7 +25,10 @@ func (r *ReportService) SubmitUserReport(report domain.Report) error {
 	if err != nil {
 		return fmt.Errorf("report service: %w", err)
 	}
-	r.repo.Save(report)
+	err = r.repo.Save(report)
+	if err != nil {
+		return fmt.Errorf("report service: %w", err)
+	}
 	return nil
 }
 
@@ -34,6 +37,9 @@ func (r *ReportService) SubmitInspectorReport(report domain.Report, inspectorRes
 	if err != nil {
 		return fmt.Errorf("report service: %w", err)
 	}
-	r.repo.Save(report)
+	err = r.repo.Save(report)
+	if err != nil {
+		return fmt.Errorf("report service: %w", err)
+	}
 	return nil
 }

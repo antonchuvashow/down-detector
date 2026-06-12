@@ -76,7 +76,7 @@ func (s *Scheduler) tick() {
 			s.logger.Error("error inspecting route:", zap.Error(err))
 			continue
 		}
-		err = s.inspectionResultSubmitter.Submit(result)
+		err = s.inspectionResultSubmitter.Submit(result, route.ID)
 		if err != nil {
 			s.logger.Error("error submitting inspection result:", zap.Error(err))
 		}

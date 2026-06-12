@@ -10,6 +10,7 @@ import (
 	"detector/internal/inspection/domain/inspector"
 	"detector/internal/report/application/service"
 	"detector/internal/report/domain"
+	routedomain "detector/internal/route/domain"
 )
 
 type ReportSubmitter struct {
@@ -20,15 +21,16 @@ func NewReportSubmitter(reportService *service.ReportService) *ReportSubmitter {
 	return &ReportSubmitter{reportService: reportService}
 }
 
-func (s *ReportSubmitter) Submit(inspectionResult inspector.InspectionResult) error {
+func (s *ReportSubmitter) Submit(result inspector.InspectionResult, routeID routedomain.RouteID) error {
 	collectedErrors := make(map[domain.ErrorType]struct{})
 	var latency time.Duration
-	collectErrorsAndLatency(inspectionResult, collectedErrors, &latency)
+	collectErrorsAndLatency(result, collectedErrors, &latency)
 
 	report := domain.Report{
-		Success:    inspectionResult.Status == inspector.InspectionStatusSuccess,
+		Success:    result.Status == inspector.InspectionStatusSuccess,
+		RouteID:    routeID,
 		ErrorTypes: collectedErrors,
-		Time:       inspectionResult.Start,
+		Time:       result.Start,
 		Descriptor: domain.Descriptor{Source: domain.SourceTypeInspector},
 		Summary: domain.Summary{
 			Latency: latency,

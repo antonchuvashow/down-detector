@@ -10,6 +10,7 @@ func NewReportSaver() *ReportSaver {
 	return &ReportSaver{}
 }
 
-func (r *ReportSaver) Save(report domain.Report) {
+func (r *ReportSaver) Save(report domain.Report) error {
 	r.reports = append(r.reports, report)
+	return nil
 }

@@ -1,0 +1,213 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse-config:/etc/clickhouse-server/config.d:ro
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--user",
+          "${CLICKHOUSE_USER}",
+          "--password",
+          "${CLICKHOUSE_PASSWORD}",
+          "--query",
+          "SELECT 1"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - ch_net
+    labels:
+      com.project.service: "clickhouse"
+      com.project.env: "${COMPOSE_ENV:-local}"
+
+  migrate:
+    image: migrate/migrate:v4.17.0
+    profiles:
+      - tools
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      [
+        "-path",
+        "/migrations/clickhouse",
+        "-database",
+        "clickhouse://clickhouse:9000/?database=${CLICKHOUSE_DB}&username=${CLICKHOUSE_USER}&password=${CLICKHOUSE_PASSWORD}&x-multi-statement=true",
+        "up"
+      ]
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - ch_net
+    labels:
+      com.project.service: "migrate"
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+    volumes:
+      - superset-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U superset -d superset"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch_net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - superset-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ch_net
+
+  superset-init:
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+    image: local/superset-clickhouse:latest
+    profiles:
+      - init
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command:
+      - /bin/bash
+      - -ec
+      - |
+        echo "Running Superset DB migrations..."
+        superset db upgrade
+
+        echo "Creating admin user if needed..."
+        superset fab create-admin \
+          --username "${SUPERSET_ADMIN_USER:-admin}" \
+          --firstname "${SUPERSET_ADMIN_FIRST_NAME:-Admin}" \
+          --lastname "${SUPERSET_ADMIN_LAST_NAME:-User}" \
+          --email "${SUPERSET_ADMIN_EMAIL:-admin@example.com}" \
+          --password "${SUPERSET_ADMIN_PASSWORD:-admin}" \
+          || echo "Admin user probably already exists, skipping..."
+
+        echo "Initializing Superset roles and permissions..."
+        superset init
+
+        echo "Superset initialized successfully"
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@postgres:5432/superset
+
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_REDIS_DB: "1"
+      RATELIMIT_STORAGE_URI: redis://redis:6379/4
+
+      SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER:-admin}
+      SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
+      SUPERSET_ADMIN_FIRST_NAME: ${SUPERSET_ADMIN_FIRST_NAME:-Admin}
+      SUPERSET_ADMIN_LAST_NAME: ${SUPERSET_ADMIN_LAST_NAME:-User}
+      SUPERSET_ADMIN_EMAIL: ${SUPERSET_ADMIN_EMAIL:-admin@example.com}
+    volumes:
+      - superset-home:/app/superset_home
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    networks:
+      - ch_net
+
+  superset:
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+    image: local/superset-clickhouse:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8088:8088"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@postgres:5432/superset
+
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      CACHE_REDIS_DB: "1"
+      RATELIMIT_STORAGE_URI: redis://redis:6379/4
+    volumes:
+      - superset-home:/app/superset_home
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    networks:
+      - ch_net
+    labels:
+      com.project.service: "superset"
+
+  chouse-ui:
+    image: ghcr.io/daun-gatal/chouse-ui:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5521:5521"
+    environment:
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      RBAC_ENCRYPTION_KEY: ${RBAC_ENCRYPTION_KEY}
+      RBAC_ENCRYPTION_SALT: ${RBAC_ENCRYPTION_SALT}
+    volumes:
+      - chouse-ui-data:/app/data
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - ch_net
+    labels:
+      com.project.service: "chouse-ui"
+
+volumes:
+  clickhouse-data:
+  chouse-ui-data:
+  superset-db:
+  superset-redis:
+  superset-home:
+
+networks:
+  ch_net:
+    driver: bridge
