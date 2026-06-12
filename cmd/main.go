@@ -10,9 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 
+	mygin "detector/internal/infrastructure/api/gin"
+	apiroute "detector/internal/infrastructure/api/route"
 	"detector/internal/infrastructure/inspector/composite"
 	"detector/internal/infrastructure/inspector/http"
 	"detector/internal/infrastructure/inspector/ping"
@@ -83,6 +86,21 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 	}
+
+	handlers := mygin.Handlers{
+		Route: apiroute.NewHandler(routeService),
+	}
+	srvCfg := mygin.Config{
+		Port:     5436,
+		Mode:     gin.TestMode,
+		Handlers: handlers,
+	}
+	srv := mygin.NewServer(srvCfg)
+	err = srv.Start()
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	defer srv.Shutdown()
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

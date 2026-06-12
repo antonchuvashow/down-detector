@@ -37,32 +37,32 @@ func (b *RouteInspectorBridge) Register(routeID route.ID, instance inspector.Ins
 		return fmt.Errorf("route inspector bridge: failed to marshal inspector config: %w", err)
 	}
 
-	routeMethod := inspectordto.RouteAssignment{
+	assignment := inspectordto.RouteAssignment{
 		RouteID:          routeID,
 		FactoryKey:       factoryKey,
 		SerializedConfig: serializedConfig,
 	}
 
-	err = b.repo.Save(routeMethod)
+	err = b.repo.Save(assignment)
 	if err != nil {
-		return fmt.Errorf("route inspector bridge: failed to save route method: %w", err)
+		return fmt.Errorf("route inspector bridge: failed to save route assignment: %w", err)
 	}
 
 	return nil
 }
 
 func (b *RouteInspectorBridge) FindInspector(routeID route.ID) (inspector.Inspector, error) {
-	routeMethod, err := b.repo.Get(routeID)
+	assignment, err := b.repo.Get(routeID)
 	if err != nil {
-		return nil, fmt.Errorf("route inspector bridge: failed to get route method: %w", err)
+		return nil, fmt.Errorf("route inspector bridge: failed to get route assignment: %w", err)
 	}
 
-	factory, err := b.factoryRegistry.Get(routeMethod.FactoryKey)
+	factory, err := b.factoryRegistry.Get(assignment.FactoryKey)
 	if err != nil {
 		return nil, fmt.Errorf("route inspector bridge: failed to get inspector factory: %w", err)
 	}
 
-	object, err := factory.Unmarshal(b.factoryRegistry, routeMethod.SerializedConfig)
+	object, err := factory.Unmarshal(b.factoryRegistry, assignment.SerializedConfig)
 	if err != nil {
 		return nil, fmt.Errorf("route inspector bridge: failed to unmarshal inspector config: %w", err)
 	}
