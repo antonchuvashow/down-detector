@@ -69,3 +69,11 @@ func (b *RouteInspectorBridge) FindInspector(routeID route.ID) (inspector.Inspec
 
 	return object, nil
 }
+
+func (b *RouteInspectorBridge) DeleteInspector(routeID route.ID) error {
+	err := b.repo.Delete(routeID)
+	if err != nil {
+		return fmt.Errorf("route inspector bridge: failed to delete route assignment: %w", err)
+	}
+	return nil
+}

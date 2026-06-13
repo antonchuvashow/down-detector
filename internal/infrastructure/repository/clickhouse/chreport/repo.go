@@ -23,7 +23,7 @@ func NewRepository(conn clickhouse.Conn, logger *zap.Logger) *Repository {
 	}
 }
 
-func (r *Repository) Save(report report.Report) error {
+func (r *Repository) Save(rp report.Report) error {
 	const query = `
         INSERT INTO reports
             (time, route_id, success, error_types, latency_ms, source, latitude, longitude, ip, platform)
@@ -32,30 +32,30 @@ func (r *Repository) Save(report report.Report) error {
 
 	// TODO: context is not passed!
 	err := r.conn.Exec(context.Background(), query,
-		report.Time.UTC().Truncate(time.Millisecond),
-		report.RouteID,
-		report.Success,
-		errorTypesToStrings(report.ErrorTypes),
-		report.Summary.Latency.Milliseconds(),
-		string(report.Descriptor.Source),
-		report.Descriptor.Latitude,
-		report.Descriptor.Longitude,
-		report.Descriptor.IP.String(),
-		report.Descriptor.Platform,
+		rp.Time.UTC().Truncate(time.Millisecond),
+		rp.RouteID,
+		rp.Success,
+		errorTypesToStrings(rp.ErrorTypes),
+		rp.Summary.Latency.Milliseconds(),
+		string(rp.Descriptor.Source),
+		rp.Descriptor.Latitude,
+		rp.Descriptor.Longitude,
+		rp.Descriptor.IP.String(),
+		rp.Descriptor.Platform,
 	)
 	if err != nil {
 		r.logger.Error("failed to save report",
 			zap.Error(err),
-			zap.String("source", string(report.Descriptor.Source)),
-			zap.Time("time", report.Time),
+			zap.String("source", string(rp.Descriptor.Source)),
+			zap.Time("time", rp.Time),
 		)
 		return fmt.Errorf("save report: %w", err)
 	}
 
 	r.logger.Debug("report saved",
-		zap.String("source", string(report.Descriptor.Source)),
-		zap.Bool("success", report.Success),
-		zap.Duration("latency", report.Summary.Latency),
+		zap.String("source", string(rp.Descriptor.Source)),
+		zap.Bool("success", rp.Success),
+		zap.Duration("latency", rp.Summary.Latency),
 	)
 
 	return nil
@@ -73,18 +73,18 @@ func (r *Repository) SaveBatch(ctx context.Context, reports []report.Report) err
 		return fmt.Errorf("prepare batch: %w", err)
 	}
 
-	for _, report := range reports {
+	for _, rp := range reports {
 		if err = batch.Append(
-			report.Time.UTC().Truncate(time.Millisecond),
-			report.RouteID,
-			report.Success,
-			errorTypesToStrings(report.ErrorTypes),
-			report.Summary.Latency.Milliseconds(),
-			string(report.Descriptor.Source),
-			report.Descriptor.Latitude,
-			report.Descriptor.Longitude,
-			report.Descriptor.IP.String(),
-			report.Descriptor.Platform,
+			rp.Time.UTC().Truncate(time.Millisecond),
+			rp.RouteID,
+			rp.Success,
+			errorTypesToStrings(rp.ErrorTypes),
+			rp.Summary.Latency.Milliseconds(),
+			string(rp.Descriptor.Source),
+			rp.Descriptor.Latitude,
+			rp.Descriptor.Longitude,
+			rp.Descriptor.IP.String(),
+			rp.Descriptor.Platform,
 		); err != nil {
 			return fmt.Errorf("append to batch: %w", err)
 		}

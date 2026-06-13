@@ -71,6 +71,29 @@ func (r *Repository) Get(routeID route.ID) (*inspectordto.RouteAssignment, error
 	return &routeAssignment, nil
 }
 
+func (r *Repository) Delete(routeID route.ID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+
+	row := r.db.QueryRowContext(ctx, `SELECT exists(SELECT 1 FROM route_methods WHERE route_id = $1)`, string(routeID))
+	var exists bool
+	err := row.Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return &inspectorapp.ErrNotFound{RouteID: routeID}
+	}
+
+	_, err = r.db.ExecContext(ctx, `DELETE FROM route_methods WHERE route_id = $1`, string(routeID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type routeAssignmentScanner interface {
 	Scan(dest ...any) error
 }

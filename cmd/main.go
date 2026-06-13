@@ -4,17 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"net"
-	"net/url"
 	"os/signal"
 	"reflect"
 	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 
 	mygin "detector/internal/infrastructure/api/gin"
+	apiinspector "detector/internal/infrastructure/api/inspector"
 	apiroute "detector/internal/infrastructure/api/route"
 	"detector/internal/infrastructure/inspector/composite"
 	"detector/internal/infrastructure/inspector/http"
@@ -29,8 +28,6 @@ import (
 	reportapp "detector/internal/report/application"
 	"detector/internal/report/domain"
 	"detector/internal/route/application"
-	"detector/internal/route/application/dto"
-	route "detector/internal/route/domain"
 	"detector/internal/scheduler/application"
 	"detector/internal/scheduler/application/submitter"
 )
@@ -53,10 +50,6 @@ func main() {
 	routeRepo := pgroute.NewRepository(postgresConn)
 	routeService := routeapp.NewService(routeRepo)
 	bridge := createBridge(postgresConn)
-
-	registerRoute("", routeService, routeRepo, bridge)
-	registerRoute("", routeService, routeRepo, bridge)
-	// registerRoute("", routeService, routeRepo, bridge)
 
 	logger, _ := zap.NewDevelopment()
 	defer func(logger *zap.Logger) {
@@ -88,7 +81,8 @@ func main() {
 	}
 
 	handlers := mygin.Handlers{
-		Route: apiroute.NewHandler(routeService),
+		Route:     apiroute.NewHandler(routeService),
+		Inspector: apiinspector.NewHandler(bridge),
 	}
 	srvCfg := mygin.Config{
 		Port:     5436,
@@ -113,41 +107,6 @@ func main() {
 			logger.Error(err.Error())
 		}
 	}(sch)
-}
-
-func registerRoute(domain string, routeService *routeapp.Service, routeRepo *pgroute.Repository, bridge *inspectorapp.RouteInspectorBridge) {
-	u := url.URL{Host: domain}
-	routes, err := routeRepo.Search(u)
-	if err != nil {
-		panic(err)
-	}
-	var rt route.Route
-	if len(routes) == 0 {
-		rt, _ = routeService.Add(routedto.AddCommand{URL: u})
-	} else if len(routes) == 1 {
-		rt = routes[0]
-	} else {
-		panic("too many routes")
-	}
-
-	cfgPing := ping.NewInspectorConfig()
-	cfgPing.Interval = new(time.Millisecond * 100)
-	cfgPing.PingCount = new(10)
-	// cfgHttp := http.NewInspectorConfig()
-	pingInspector := ping.NewInspector(*cfgPing)
-	// httpInspector := http.NewInspector(*cfgHttp)
-
-	compositeInspector := composite.NewInspector(composite.InspectorConfig{
-		Inspectors: map[string]inspector.Inspector{
-			"ping": pingInspector,
-			// "http": httpInspector,
-		},
-	})
-
-	err = bridge.Register(rt.ID, compositeInspector)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func createBridge(postgresConn *sql.DB) *inspectorapp.RouteInspectorBridge {

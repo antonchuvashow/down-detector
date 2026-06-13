@@ -3,12 +3,13 @@ package gin
 import (
 	"github.com/gin-gonic/gin"
 
+	apiinspector "detector/internal/infrastructure/api/inspector"
 	"detector/internal/infrastructure/api/route"
 )
 
 type Handlers struct {
-	Route *apiroute.Handler
-	// Assignment *assignment.Handler
+	Route     *apiroute.Handler
+	Inspector *apiinspector.Handler
 	// Report     *report.Handler
 }
 
@@ -24,6 +25,7 @@ func SetupRoutes(r *gin.Engine, handlers Handlers) {
 	{
 		// Register controller routes
 		handlers.Route.RegisterRoutes(api)
+		handlers.Inspector.RegisterInspectors(api)
 		// handlers.Assignment.RegisterRoutes(api)
 		// handlers.Report.RegisterRoutes(api)
 	}

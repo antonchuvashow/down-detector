@@ -75,3 +75,7 @@ func (h *Inspector) Inspect(route route.Route) (inspector.Result, error) {
 	}
 	return res, nil
 }
+
+func (h *Inspector) Config() InspectorConfig {
+	return h.config
+}

@@ -21,13 +21,12 @@ func NewHandler(service *routeapp.Service) *Handler {
 // RegisterRoutes registers all route-related endpoints
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 	routes := r.Group("/routes")
-	{
-		routes.GET("", h.List)
-		routes.POST("", h.Create)
-		routes.GET("/:id", h.Get)
-		routes.PUT("/:id", h.Update)
-		routes.DELETE("/:id", h.Delete)
-	}
+
+	routes.GET("", h.List)
+	routes.POST("", h.Create)
+	routes.GET("/:id", h.Get)
+	routes.PUT("/:id", h.Update)
+	routes.DELETE("/:id", h.Delete)
 }
 
 func (h *Handler) List(c *gin.Context) {

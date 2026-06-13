@@ -35,6 +35,10 @@ func (c *Inspector) Inspect(route route.Route) (inspector.Result, error) {
 	return result, nil
 }
 
+func (c *Inspector) Config() InspectorConfig {
+	return c.config
+}
+
 func NewInspector(config InspectorConfig) *Inspector {
 	return &Inspector{config: config}
 }

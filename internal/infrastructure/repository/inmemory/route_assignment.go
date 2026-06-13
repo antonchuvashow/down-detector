@@ -28,3 +28,13 @@ func (r *RouteAssignmentRepository) Get(routeID route.ID) (*inspectordto.RouteAs
 	}
 	return &routeAssignment, nil
 }
+
+func (r *RouteAssignmentRepository) Delete(routeID route.ID) error {
+	_, err := r.Get(routeID)
+	if err != nil {
+		return err
+	}
+
+	delete(r.routeAssignments, routeID)
+	return nil
+}

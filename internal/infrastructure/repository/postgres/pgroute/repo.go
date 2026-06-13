@@ -165,6 +165,7 @@ func (r *Repository) Search(path url.URL) ([]route.Route, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	routes := make([]route.Route, 0)
 	for rows.Next() {

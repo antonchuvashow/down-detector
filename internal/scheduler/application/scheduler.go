@@ -1,6 +1,7 @@
 package schedulerapp
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-co-op/gocron/v2"
@@ -68,7 +69,9 @@ func (s *Scheduler) tick() {
 	for _, route := range routes {
 		insp, err := s.routeInspectorBridge.FindInspector(route.ID)
 		if err != nil {
-			s.logger.Error("error finding inspector:", zap.Error(err))
+			if _, ok := errors.AsType[*inspectorapp.ErrNotFound](err); !ok {
+				s.logger.Error("error finding inspector:", zap.Error(err))
+			}
 			continue
 		}
 		result, err := insp.Inspect(route)

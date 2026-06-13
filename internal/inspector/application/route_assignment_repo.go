@@ -8,4 +8,5 @@ import (
 type RouteAssignmentRepository interface {
 	Save(routeAssignment inspectordto.RouteAssignment) error
 	Get(routeID route.ID) (*inspectordto.RouteAssignment, error)
+	Delete(routeID route.ID) error
 }

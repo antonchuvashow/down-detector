@@ -62,3 +62,7 @@ func (i *Inspector) determineStatus(stats *probing.Statistics) inspector.ResultS
 	}
 	return inspector.ResultStatusError
 }
+
+func (i *Inspector) Config() InspectorConfig {
+	return i.config
+}

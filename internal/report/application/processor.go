@@ -25,7 +25,7 @@ func (p *PrintProcessor) ProcessUserReport(report report.Report) error {
 	return nil
 }
 
-func (p *PrintProcessor) ProcessInspectorReport(report report.Report, object inspector.Result) error {
+func (p *PrintProcessor) ProcessInspectorReport(report report.Report, _ inspector.Result) error {
 	p.logger.Info("ProcessInspectorReport", zap.Bool("success", report.Success))
 	return nil
 }
