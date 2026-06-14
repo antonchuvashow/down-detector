@@ -6,6 +6,7 @@ docker compose up -d superset-postgres superset-redis clickhouse
 docker compose --profile init run --rm superset-init
 docker compose up -d superset
 docker compose --profile tools up clickhouse-migrate postgres-migrate
+docker compose up -d down-detector
 ```
 
 ## Environment variables
