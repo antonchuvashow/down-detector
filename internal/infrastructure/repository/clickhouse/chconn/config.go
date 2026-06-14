@@ -2,6 +2,7 @@ package chconn
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -11,6 +12,15 @@ type Config struct {
 	Database string
 	Username string
 	Password string
+}
+
+func ConfigFromEnv() Config {
+	return Config{
+		Addr:     getEnv("CLICKHOUSE_ADDR", "localhost:9000"),
+		Database: getEnv("CLICKHOUSE_DB", "analytics"),
+		Username: getEnv("CLICKHOUSE_USER", "dev"),
+		Password: getEnv("CLICKHOUSE_PASSWORD", "password"),
+	}
 }
 
 func New(cfg Config) (clickhouse.Conn, error) {
@@ -30,4 +40,13 @@ func New(cfg Config) (clickhouse.Conn, error) {
 	}
 
 	return conn, nil
+}
+
+func getEnv(key string, fallback string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+
+	return value
 }

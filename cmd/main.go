@@ -3,14 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
-	"net"
-	"net/url"
 	"os/signal"
 	"reflect"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-co-op/gocron/v2"
 	"go.uber.org/zap"
 
 	mygin "detector/internal/infrastructure/api/gin"
@@ -31,9 +27,8 @@ import (
 	inspectorapp "detector/internal/inspector/application"
 	inspector "detector/internal/inspector/domain"
 	reportapp "detector/internal/report/application"
-	"detector/internal/report/domain"
-	"detector/internal/route/application"
-	"detector/internal/scheduler/application"
+	routeapp "detector/internal/route/application"
+	schedulerapp "detector/internal/scheduler/application"
 	"detector/internal/scheduler/application/submitter"
 )
 
@@ -44,13 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	reportSubmitterDescriptor := report.Descriptor{
-		Source:    report.SourceTypeInspector,
-		Latitude:  55.160023,
-		Longitude: 61.401998,
-		IP:        net.ParseIP(""),
-		Platform:  report.PlatformTypeIOS,
-	}
+	reportSubmitterDescriptor := reportSubmitterDescriptorFromEnv()
 
 	routeRepo := pgroute.NewRepository(postgresConn)
 	eventChannel := make(chan routeapp.Event)
@@ -63,14 +52,7 @@ func main() {
 		_ = logger.Sync()
 	}(logger)
 	processor := reportapp.NewPrintProcessor(logger)
-	cfg := chconn.Config{
-		Addr:     "localhost:9000",
-		Database: "analytics",
-		Username: "dev",
-		Password: "password",
-	}
-
-	conn, err := chconn.New(cfg)
+	conn, err := chconn.New(chconn.ConfigFromEnv())
 	if err != nil {
 		panic(err)
 	}
@@ -82,47 +64,27 @@ func main() {
 	reportService := reportapp.NewService(processor, reportsaver)
 	printSubmitter := submitter.NewReportSubmitter(reportService, reportSubmitterDescriptor)
 
-	cronJob := gocron.CronJob("*/10 * * * * *", true)
+	cronJob := schedulerCronJobFromEnv()
 
 	sch := schedulerapp.NewScheduler(routeService, bridge, printSubmitter, cronJob, logger)
 	err = sch.Start()
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	parsedurl, err := url.Parse("http://localhost:8088")
+	supersetConfig, err := superset.ConfigFromEnv()
 	if err != nil {
 		panic(err)
 	}
-	supersetConfig := superset.Config{
-		BaseURL:       *parsedurl,
-		AdminUser:     "admin",
-		AdminPassword: "admin",
-	}
-
-	guestDescriptor := superset.GuestDescriptor{
-		Username:  "guest",
-		Firstname: "guest",
-		Lastname:  "guest",
-	}
+	guestDescriptor := superset.GuestDescriptorFromEnv()
 
 	handlers := mygin.Handlers{
 		Route:     apiroute.NewHandler(routeService),
 		Inspector: apiinspector.NewHandler(bridge),
 		Report:    apireport.NewHandler(reportService),
-		Superset: apisuperset.NewHandler(superset.NewClient(supersetConfig, logger), guestDescriptor, []apisuperset.Dashboard{
-			{
-				Name: "Main",
-				ID:   "8f9771f2-2c8a-4e7e-8f10-a5ecd7d39255",
-			},
-		}, logger),
+		Superset:  apisuperset.NewHandler(superset.NewClient(supersetConfig, logger), guestDescriptor, apisuperset.DashboardsFromEnv(), logger),
 	}
 
-	srvCfg := mygin.Config{
-		Port:     5436,
-		Mode:     gin.TestMode,
-		Handlers: handlers,
-	}
-	srv := mygin.NewServer(srvCfg)
+	srv := mygin.NewServer(mygin.ConfigFromEnv(handlers))
 	err = srv.Start()
 	if err != nil {
 		logger.Error(err.Error())
