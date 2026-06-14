@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detector – Отправить репорт</title>
+  <link rel="stylesheet" href="/static/css/base.css" />
+  <link rel="stylesheet" href="/static/css/report.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <span class="navbar__brand">Detector</span>
+    <ul class="navbar__links">
+      <li><a href="/" class="navbar__link">Дашборды</a></li>
+      <li><a href="/report" class="navbar__link navbar__link--active">Отправить репорт</a></li>
+    </ul>
+  </nav>
+
+  <main class="main main--narrow">
+    <h1 class="page-title">Сообщить о проблеме</h1>
+    <p class="page-subtitle">Помогите нам зафиксировать инцидент — это займёт несколько секунд.</p>
+
+    <!-- Success banner (hidden by default) -->
+    <div class="alert alert--success hidden" id="success-banner" role="status">
+      ✓ Репорт отправлен. Спасибо!
+    </div>
+
+    <!-- Error banner (hidden by default) -->
+    <div class="alert alert--error hidden" id="error-banner" role="alert">
+      <strong>Не удалось отправить репорт.</strong>
+      <span id="error-msg"></span>
+    </div>
+
+    <form class="report-form" id="report-form" novalidate>
+
+      <!-- Route select -->
+      <div class="form-group">
+        <label class="form-label" for="route-select">Маршрут / сервис</label>
+        <div class="select-wrapper">
+          <select class="form-control" id="route-select" name="route_id" required>
+            <option value="" disabled selected>Загрузка маршрутов…</option>
+          </select>
+        </div>
+        <span class="form-hint" id="route-error" aria-live="polite"></span>
+      </div>
+
+      <!-- Status toggle -->
+      <div class="form-group">
+        <label class="form-label">Статус</label>
+        <div class="toggle-group" role="group" aria-label="Статус">
+          <button type="button" class="toggle-btn toggle-btn--success" id="btn-success" aria-pressed="false">
+            ✓ Работает
+          </button>
+          <button type="button" class="toggle-btn toggle-btn--error" id="btn-error" aria-pressed="true">
+            ✗ Не работает
+          </button>
+        </div>
+        <input type="hidden" id="status-value" value="false" />
+      </div>
+
+      <!-- Error types (shown when status = error) -->
+      <div class="form-group" id="error-types-group">
+        <label class="form-label">Тип проблемы</label>
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="error_types" value="server" />
+            <span>Ошибка сервера</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="error_types" value="network" />
+            <span>Проблема с сетью</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="error_types" value="web_access" />
+            <span>Не открывается в браузере</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="error_types" value="mobile_access" />
+            <span>Не работает на мобильном устройстве</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="error_types" value="unknown" />
+            <span>Другое</span>
+          </label>
+        </div>
+        <span class="form-hint form-hint--error hidden" id="error-types-error" aria-live="polite">
+        Выберите хотя бы один тип ошибки
+        </span>
+      </div>
+      <!-- Submit -->
+      <button type="submit" class="btn btn--primary" id="submit-btn">
+        Отправить
+      </button>
+    </form>
+  </main>
+
+  <script src="/static/js/report.js"></script>
+</body>
+</html>

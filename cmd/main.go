@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net"
+	"net/url"
 	"os/signal"
 	"reflect"
 	"syscall"
@@ -14,12 +15,16 @@ import (
 
 	mygin "detector/internal/infrastructure/api/gin"
 	apiinspector "detector/internal/infrastructure/api/inspector"
+	apireport "detector/internal/infrastructure/api/report"
 	apiroute "detector/internal/infrastructure/api/route"
+	apisuperset "detector/internal/infrastructure/api/superset"
+	"detector/internal/infrastructure/client/superset"
 	"detector/internal/infrastructure/inspector/composite"
 	"detector/internal/infrastructure/inspector/http"
 	"detector/internal/infrastructure/inspector/ping"
 	"detector/internal/infrastructure/repository/clickhouse/chconn"
 	"detector/internal/infrastructure/repository/clickhouse/chreport"
+	"detector/internal/infrastructure/repository/clickhouse/chroute"
 	"detector/internal/infrastructure/repository/postgres"
 	"detector/internal/infrastructure/repository/postgres/pgroute"
 	"detector/internal/infrastructure/repository/postgres/pgrouteassignment"
@@ -48,7 +53,9 @@ func main() {
 	}
 
 	routeRepo := pgroute.NewRepository(postgresConn)
-	routeService := routeapp.NewService(routeRepo)
+	eventChannel := make(chan routeapp.Event)
+
+	routeService := routeapp.NewService(routeRepo, eventChannel)
 	bridge := createBridge(postgresConn)
 
 	logger, _ := zap.NewDevelopment()
@@ -69,6 +76,9 @@ func main() {
 	}
 
 	reportsaver := chreport.NewRepository(conn, logger)
+	chrouteListener := chroute.NewEventListener(conn, logger, eventChannel)
+	go chrouteListener.Listen()
+
 	reportService := reportapp.NewService(processor, reportsaver)
 	printSubmitter := submitter.NewReportSubmitter(reportService, reportSubmitterDescriptor)
 
@@ -79,11 +89,34 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 	}
+	parsedurl, err := url.Parse("http://localhost:8088")
+	if err != nil {
+		panic(err)
+	}
+	supersetConfig := superset.Config{
+		BaseURL:       *parsedurl,
+		AdminUser:     "admin",
+		AdminPassword: "admin",
+	}
+
+	guestDescriptor := superset.GuestDescriptor{
+		Username:  "guest",
+		Firstname: "guest",
+		Lastname:  "guest",
+	}
 
 	handlers := mygin.Handlers{
 		Route:     apiroute.NewHandler(routeService),
 		Inspector: apiinspector.NewHandler(bridge),
+		Report:    apireport.NewHandler(reportService),
+		Superset: apisuperset.NewHandler(superset.NewClient(supersetConfig, logger), guestDescriptor, []apisuperset.Dashboard{
+			{
+				Name: "Main",
+				ID:   "8f9771f2-2c8a-4e7e-8f10-a5ecd7d39255",
+			},
+		}, logger),
 	}
+
 	srvCfg := mygin.Config{
 		Port:     5436,
 		Mode:     gin.TestMode,

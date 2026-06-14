@@ -1,5 +1,28 @@
 import os
 
+FEATURE_FLAGS = {"EMBEDDED_SUPERSET": True}
+SESSION_COOKIE_SAMESITE = None
+
+ENABLE_CORS = True
+CORS_OPTIONS = {
+    "supports_credentials": True,
+    "allow_headers": "*",
+    "expose_headers": "*",
+    "resources": "*",
+    "origins": os.environ.get("CORS_OPTIONS_ORIGINS", "*").split(",")
+}
+print(CORS_OPTIONS)
+GUEST_ROLE_NAME = "EmbedGuest"
+# GUEST_TOKEN_JWT_SECRET = "YOUR_SECURE_RANDOM_JWT_SECRET_KEY"
+# GUEST_TOKEN_JWT_ALGO = "HS256"
+# GUEST_TOKEN_HEADER_NAME = "X-GuestToken"
+# GUEST_TOKEN_JWT_EXP_SECONDS = 300
+
+OVERRIDE_HTTP_HEADERS = {
+    'X-Frame-Options': 'ALLOWALL'
+}
+TALISMAN_ENABLED = False
+
 SECRET_KEY = os.environ["SUPERSET_SECRET_KEY"]
 
 SQLALCHEMY_DATABASE_URI = os.environ["SQLALCHEMY_DATABASE_URI"]

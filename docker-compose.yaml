@@ -207,6 +207,7 @@ services:
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      CORS_OPTIONS_ORIGINS: ${CORS_OPTIONS_ORIGINS}
 
       SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://superset:superset@superset-postgres:5432/superset
 

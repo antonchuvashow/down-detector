@@ -10,11 +10,12 @@ import (
 )
 
 type Service struct {
-	repo Repository
+	repo    Repository
+	eventCh chan<- Event
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, eventCh chan<- Event) *Service {
+	return &Service{repo: repo, eventCh: eventCh}
 }
 
 func (s *Service) GetAllRoutes() ([]route.Route, error) {
@@ -36,15 +37,33 @@ func (s *Service) Add(routeCommand routedto.AddCommand) (route.Route, error) {
 		URL: routeCommand.URL,
 	}
 
-	return r, s.repo.Add(r)
+	err = s.repo.Add(r)
+	if err != nil {
+		return route.Route{}, err
+	}
+
+	s.eventCh <- Event{Type: EventTypeCreate, Route: &r, RouteID: id}
+	return r, nil
 }
 
 func (s *Service) Update(route route.Route) error {
-	return s.repo.Update(route)
+	err := s.repo.Update(route)
+	if err != nil {
+		return err
+	}
+
+	s.eventCh <- Event{Type: EventTypeUpdate, Route: &route, RouteID: route.ID}
+	return nil
 }
 
 func (s *Service) Delete(id route.ID) error {
-	return s.repo.Delete(id)
+	err := s.repo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	s.eventCh <- Event{Type: EventTypeDelete, Route: nil, RouteID: id}
+	return nil
 }
 
 func newRouteID() (route.ID, error) {
